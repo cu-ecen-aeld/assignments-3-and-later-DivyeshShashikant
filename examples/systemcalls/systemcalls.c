@@ -1,3 +1,7 @@
+/*@author: Divyesh  Patel
+ *@filename: systemcalls.c
+ *@brief: Assignment 3 Part 1: System Calls
+*/
 #include "systemcalls.h"
 #include "sys/types.h"
 #include "sys/wait.h"
@@ -71,10 +75,13 @@ bool do_exec(int count, ...)
     pid_t pid;
 
     pid = fork();
+
+    //check for fork() errors
     if(pid == -1)
     {
 	    perror("fork");
     }	    
+    //create child
     else if(!pid)
     {
     	    printf("Child process created\n");
@@ -87,6 +94,7 @@ bool do_exec(int count, ...)
 	    }      	    
 	    
     }
+    //waiting for terminated child
     else
     {
     int wstatus;
