@@ -12,7 +12,6 @@
 #include<unistd.h>
 #include<string.h>
 
-
 int main(int argc, char* argv[])
 {
 	//opens a connection to system logger and uses LOG_USER facility
