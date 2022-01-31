@@ -55,7 +55,7 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
     make ARCH=$ARCH CROSS_COMPILE=$CROSS_COMPILE defconfig
     
     #build a kernel image for booting with QEMU
-    make ARCH=$ARCH CROSS_COMPILE=$CROSS_COMPILE all
+    make -j16 ARCH=$ARCH CROSS_COMPILE=$CROSS_COMPILE all
     
     #build any kernel modules
     make ARCH=$ARCH CROSS_COMPILE=$CROSS_COMPILE modules
@@ -113,12 +113,15 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 
 # TODO: Add library dependencies to rootfs
-export SYSROOT=$(${CROSS_COMPILE}gcc -print-sysroot)
+SYSROOT=$(${CROSS_COMPILE}gcc -print-sysroot)
 cp $SYSROOT/lib/ld-linux-aarch64.so.1 ${OUTDIR}/rootfs/lib
+echo "copied ld-linux-aarch64.so.1"
 cp $SYSROOT/lib64/libm.so.6 ${OUTDIR}/rootfs/lib64
+echo "copied libm.so.6"
 cp $SYSROOT/lib64/libresolv.so.2 ${OUTDIR}/rootfs/lib64
+echo "copied libresolv.so.2"
 cp $SYSROOT/lib64/libc.so.6 ${OUTDIR}/rootfs/lib64
-
+echo "copied libc.so.6"
 
 
 # TODO: Make device nodes
@@ -133,10 +136,15 @@ cp ${FINDER_APP_DIR}/writer ${OUTDIR}/rootfs/home
 # TODO: Copy the finder related scripts and executables to the /home directory
 # on the target rootfs
 cp ${FINDER_APP_DIR}/finder.sh ${OUTDIR}/rootfs/home
+echo "copied finder.sh"
 cp ${FINDER_APP_DIR}/finder-test.sh ${OUTDIR}/rootfs/home
+echo "copied finder-test.sh"
 cp ${FINDER_APP_DIR}/writer ${OUTDIR}/rootfs/home
+echo "copied writer"
 cp ${FINDER_APP_DIR}/conf/ -r ${OUTDIR}/rootfs/home
+echo "copied /conf"
 cp ${FINDER_APP_DIR}/autorun-qemu.sh ${OUTDIR}/rootfs/home
+echo "copied autorun-qemu.sh"
 
 
 # TODO: Chown the root directory
