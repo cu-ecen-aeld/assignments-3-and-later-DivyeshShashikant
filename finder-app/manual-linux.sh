@@ -128,15 +128,15 @@ sudo mknod -m 666 dev/null c 1 3
 sudo mknod -m 600 dev/console c 5 1
 
 # TODO: Clean and build the writer utility
-cp /home/divyesh/Desktop/AESD/assignments-3-and-later-DivyeshShashikant/finder-app/writer ${OUTDIR}/rootfs/home
+cp ${FINDER_APP_DIR}/writer ${OUTDIR}/rootfs/home
 
 # TODO: Copy the finder related scripts and executables to the /home directory
 # on the target rootfs
-cp /home/divyesh/Desktop/AESD/assignments-3-and-later-DivyeshShashikant/finder-app/finder.sh ${OUTDIR}/rootfs/home
-cp /home/divyesh/Desktop/AESD/assignments-3-and-later-DivyeshShashikant/finder-app/finder-test.sh ${OUTDIR}/rootfs/home
-cp /home/divyesh/Desktop/AESD/assignments-3-and-later-DivyeshShashikant/finder-app/writer ${OUTDIR}/rootfs/home
-cp /home/divyesh/Desktop/AESD/assignments-3-and-later-DivyeshShashikant/finder-app/conf/ -r ${OUTDIR}/rootfs/home
-cp /home/divyesh/Desktop/AESD/assignments-3-and-later-DivyeshShashikant/finder-app/autorun-qemu.sh ${OUTDIR}/rootfs/home
+cp ${FINDER_APP_DIR}/finder.sh ${OUTDIR}/rootfs/home
+cp ${FINDER_APP_DIR}/finder-test.sh ${OUTDIR}/rootfs/home
+cp ${FINDER_APP_DIR}/writer ${OUTDIR}/rootfs/home
+cp ${FINDER_APP_DIR}/conf/ -r ${OUTDIR}/rootfs/home
+cp ${FINDER_APP_DIR}/autorun-qemu.sh ${OUTDIR}/rootfs/home
 
 
 # TODO: Chown the root directory
