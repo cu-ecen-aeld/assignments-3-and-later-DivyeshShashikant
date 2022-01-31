@@ -68,10 +68,12 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
     
     
 fi 
-
+#copy the generated image to OUTDIR
 cp ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ${OUTDIR}
 echo "Adding the Image in outdir"
- echo "$OUTDIR"
+echo "$OUTDIR"
+
+
 echo "Creating the staging directory for the root filesystem"
 cd "$OUTDIR"
 if [ -d "${OUTDIR}/rootfs" ]
@@ -112,33 +114,38 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 
 # TODO: Add library dependencies to rootfs
 export SYSROOT=$(${CROSS_COMPILE}gcc -print-sysroot)
-cp -a $SYSROOT/lib/ld-linux-aarch64.so.1 ${OUTDIR}/rootfs/lib
-cp -a $SYSROOT/lib64/libm.so.6 ${OUTDIR}/rootfs/lib64
-cp -a $SYSROOT/lib64/libresolv.so.2 ${OUTDIR}/rootfs/lib64
-cp -a $SYSROOT/lib64/libc.so.6 ${OUTDIR}/rootfs/lib64
+cp $SYSROOT/lib/ld-linux-aarch64.so.1 ${OUTDIR}/rootfs/lib
+cp $SYSROOT/lib64/libm.so.6 ${OUTDIR}/rootfs/lib64
+cp $SYSROOT/lib64/libresolv.so.2 ${OUTDIR}/rootfs/lib64
+cp $SYSROOT/lib64/libc.so.6 ${OUTDIR}/rootfs/lib64
 
 
 
 # TODO: Make device nodes
+#NULL node
 sudo mknod -m 666 dev/null c 1 3
+#CONSOLE node
 sudo mknod -m 600 dev/console c 5 1
 
 # TODO: Clean and build the writer utility
-cp -a /home/divyesh/Desktop/AESD/assignments-3-and-later-DivyeshShashikant/finder-app/writer ${OUTDIR}/rootfs/home
+cp /home/divyesh/Desktop/AESD/assignments-3-and-later-DivyeshShashikant/finder-app/writer ${OUTDIR}/rootfs/home
 
 # TODO: Copy the finder related scripts and executables to the /home directory
 # on the target rootfs
-cp -a /home/divyesh/Desktop/AESD/assignments-3-and-later-DivyeshShashikant/finder-app/finder.sh ${OUTDIR}/rootfs/home
-cp -a /home/divyesh/Desktop/AESD/assignments-3-and-later-DivyeshShashikant/finder-app/finder-test.sh ${OUTDIR}/rootfs/home
-cp -a /home/divyesh/Desktop/AESD/assignments-3-and-later-DivyeshShashikant/finder-app/conf/username.txt ${OUTDIR}/rootfs/home
+cp /home/divyesh/Desktop/AESD/assignments-3-and-later-DivyeshShashikant/finder-app/finder.sh ${OUTDIR}/rootfs/home
+cp /home/divyesh/Desktop/AESD/assignments-3-and-later-DivyeshShashikant/finder-app/finder-test.sh ${OUTDIR}/rootfs/home
+cp /home/divyesh/Desktop/AESD/assignments-3-and-later-DivyeshShashikant/finder-app/writer ${OUTDIR}/rootfs/home
+cp /home/divyesh/Desktop/AESD/assignments-3-and-later-DivyeshShashikant/finder-app/conf/ -r ${OUTDIR}/rootfs/home
+cp /home/divyesh/Desktop/AESD/assignments-3-and-later-DivyeshShashikant/finder-app/autorun-qemu.sh ${OUTDIR}/rootfs/home
+
 
 # TODO: Chown the root directory
   cd $OUTDIR/rootfs
   sudo chown -R root:root *
 	
 # TODO: Create initramfs.cpio.gz
-cd $OUTDIR
+cd $OUTDIR/rootfs
 find . | cpio -H newc -ov --owner root:root > ../initramfs.cpio
-cd "$OUTDIR"
-gzip initramfs.cpio
+cd ..
+gzip -f initramfs.cpio
 

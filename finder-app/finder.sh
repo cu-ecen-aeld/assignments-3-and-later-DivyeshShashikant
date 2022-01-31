@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Author: Divyesh Patel
 # File: finder.sh

@@ -1,9 +1,8 @@
+
+all : writer
+
 writer: writer.o
-	$(CROSS_COMPILE)gcc -o writer writer.o
-
-
-writer.o: writer.c
-	$(CROSS_COMPILE)gcc -c -Wall -Werror writer.c
+	$(CROSS_COMPILE)gcc -Wall -Werror writer.c -o writer
 
 clean:
 	-rm *.o writer
