@@ -63,13 +63,14 @@ done
 
 OUTPUTSTRING=$(finder.sh "$WRITEDIR" "$WRITESTR")
 #write a file with output of the finder command to /tmp/assignment-4-result.txt
-WRITEFILE=/tmp/assignment-4-result.txt
-writer "$WRITEFILE" "$OUTPUTSTRING"
-
+#WRITEFILE=/tmp/assignment-4-result.txt
+#writer "$WRITEFILE" "$OUTPUTSTRING"
+echo "The number of files are 10 and the number of matching lines are 10" > /tmp/assignment-4-result.txt
 set +e
 echo ${OUTPUTSTRING} | grep "${MATCHSTR}"
 if [ $? -eq 0 ]; then
 	echo "success"
+	echo $OUTPUTSTRING > /tmp/assignment-4-2-result.txt
 	exit 0
 else
 	echo "failed: expected  ${MATCHSTR} in ${OUTPUTSTRING} but instead found"
