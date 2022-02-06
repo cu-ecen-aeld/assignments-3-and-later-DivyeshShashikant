@@ -63,7 +63,8 @@ done
 
 OUTPUTSTRING=$(finder.sh "$WRITEDIR" "$WRITESTR")
 #write a file with output of the finder command to /tmp/assignment-4-result.txt
-writer /tmp/assignment-4-result.txt ${OUTPUTSTRING}
+WRITEFILE=/tmp/assignment-4-result.txt
+writer "$WRITEFILE" "$OUTPUTSTRING"
 
 set +e
 echo ${OUTPUTSTRING} | grep "${MATCHSTR}"
