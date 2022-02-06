@@ -61,7 +61,7 @@ do
 	writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
 done
 
-OUTPUTSTRING=$(./finder.sh "$WRITEDIR" "$WRITESTR")
+OUTPUTSTRING=$(finder.sh "$WRITEDIR" "$WRITESTR")
 touch /tmp/assignment-4-result.txt
 cat $OUTPUTSTRING > /tmp/assignment-4-result.txt
 
