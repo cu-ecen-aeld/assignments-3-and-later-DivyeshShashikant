@@ -1,8 +1,10 @@
 
+CC=${CROSS_COMPILE}gcc
+CCFLAGS=-Wall -Werror
 all : writer
 
 writer: writer.o
-	$(CROSS_COMPILE)gcc -Wall -Werror writer.c -o writer
+	${CC} ${CCFLAGS}  writer.c -o writer
 
 clean:
 	-rm -f *.o writer
