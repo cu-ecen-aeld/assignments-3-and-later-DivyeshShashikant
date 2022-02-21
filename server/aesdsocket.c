@@ -61,6 +61,7 @@ int main(int argc, char *argv[])
 	if(signal (SIGINT, signal_handler) == SIG_ERR)
 	{
 		syslog(LOG_ERR,"Cannot handle SIGINT");
+		closelog();
 		exit(EXIT_FAILURE);
 	}
 	
@@ -68,6 +69,7 @@ int main(int argc, char *argv[])
 	if(signal(SIGTERM, signal_handler) == SIG_ERR)
 	{
 		syslog(LOG_ERR,"Cannot handle SIGTERM");
+		closelog();
 		exit(EXIT_FAILURE);
 	}
 	
@@ -76,6 +78,7 @@ int main(int argc, char *argv[])
 	if((status = getaddrinfo(NULL, PORT, &hints, &servinfo))!=0)
 	{
 		fprintf(stderr, "getaddrinfo error: %s\n",gai_strerror(status));
+		closelog();
 		return -1;
 	}
 
@@ -84,6 +87,7 @@ int main(int argc, char *argv[])
 	if(socketfd == -1)
 	{
 		perror("server: socket");
+		closelog();
 		return -1;
 	}	
 	
@@ -93,6 +97,7 @@ int main(int argc, char *argv[])
 	{
 		perror("server: setsockopt");
 		close(socketfd);
+		closelog();
 		return -1;
 	}
 	
@@ -102,6 +107,7 @@ int main(int argc, char *argv[])
 	{
 		perror("server: bind");
 		close(socketfd);
+		closelog();
 		return -1;
 	}
 	
@@ -117,11 +123,13 @@ int main(int argc, char *argv[])
 			if(pid == -1)
 			{
 				syslog(LOG_ERR,"Fork Failed");
+				closelog();
 				exit(EXIT_FAILURE);
 			}		
 			else if(pid !=0)
 			{	
 				syslog(LOG_DEBUG,"Child pid is %d",pid);
+				closelog();
 				exit(EXIT_SUCCESS);
 			}
 			
@@ -160,6 +168,7 @@ int main(int argc, char *argv[])
 	if(listenstat == -1)
 	{
 		perror("server: listen");
+		closelog();
 		close(socketfd);
 		return -1;
 	}
@@ -174,6 +183,7 @@ int main(int argc, char *argv[])
 		{
 			perror("server: accept");
 			close(socketfd);
+			closelog();
 			return -1;
 		}
 		
@@ -192,6 +202,7 @@ int main(int argc, char *argv[])
 			printf("File not created\n");
 			close(socketfd);
 			close(newfd);
+			closelog();
 			exit(EXIT_FAILURE);
 		}
 		else
@@ -209,6 +220,7 @@ int main(int argc, char *argv[])
 			perror("server: recv");
 			close(socketfd);
 			close(newfd);
+			closelog();
 			return -1;
 		}
 		
@@ -220,6 +232,7 @@ int main(int argc, char *argv[])
 			close(socketfd);
 			close(newfd);
 			close(fd);
+			closelog();
 			exit(EXIT_FAILURE);
 		}
 		
@@ -244,6 +257,7 @@ int main(int argc, char *argv[])
 			close(socketfd);
 			close(newfd);
 			close(fd);
+			closelog();
 			exit(EXIT_FAILURE);
 		}
 		
@@ -256,6 +270,7 @@ int main(int argc, char *argv[])
 			close(socketfd);
 			close(newfd);
 			close(fd);
+			closelog();
 			return -1;
 		}
 		
@@ -266,6 +281,7 @@ int main(int argc, char *argv[])
 	close(fd);
 	syslog(LOG_DEBUG,"Closed Connection from %s",ipaddress);
 	printf("file closed\n");
+	closelog();
 }
 
 	return 0;
@@ -285,6 +301,7 @@ static void signal_handler(int signo)
 		{
 			perror("Signal Handler : Shutdown");
 			syslog(LOG_ERR,"Shutdown failure");
+			closelog();
 			exit(EXIT_FAILURE);
 		}
 		
