@@ -24,11 +24,7 @@
 #define MAXSIZE 1024    
 
 
-static void signal_handler(int signo);
-void *thread_func(void* thread_param);
-void *cleanup(void* clean_args);
-void *timestamp_func(void *timestamp);
-
+//structure that holds relevant data for the threads in linked list
 typedef struct threads{
     pthread_t ids;          //store thread id of the accepted client
     int client_fd;          //store client fd of the accepted client
@@ -36,60 +32,36 @@ typedef struct threads{
     TAILQ_ENTRY(threads) nodes; //points to next node
 }node_t;
 
+// This typedef creates a head_t that makes it easy for us to pass pointers to
+// head_t without the compiler complaining.
 typedef TAILQ_HEAD(head_s, threads) head_t;
 head_t head;
 
+
+//Function prototypes
+static void signal_handler(int signo);
+void *thread_func(void* thread_param);
+void *cleanup(void* clean_args);
+void *timestamp_func(void *timestamp);
+void _free_queue(head_t * head);
+node_t* _fill_queue(head_t * head, const pthread_t threadid, const int threadclientid);
+
+
+
 int count_nodes, count_nodes1;
 
-node_t* _fill_queue(head_t * head, const pthread_t threadid, const int threadclientid)
-{
-    struct threads *e = malloc(sizeof(struct threads));
-    if(e == NULL)
-    {
-        printf("Malloc Unsuccessfull\n");
-        exit(EXIT_FAILURE);
-    }
-    e->ids = threadid;
-    e->client_fd = threadclientid;
-    e->complete = 0;
-    TAILQ_INSERT_TAIL(head,e,nodes);
-    e = NULL;
-
-    count_nodes++;
-    printf("node created for threads are %d\n",count_nodes);
-    return TAILQ_LAST(head, head_s);
-}
-
-void _free_queue(head_t * head)
-{
-    struct threads *e = NULL;
-    while(!TAILQ_EMPTY(head))
-    {
-        e = TAILQ_FIRST(head);
-        TAILQ_REMOVE(head,e,nodes);
-        free(e);
-        e = NULL;
-    }
-    
-}
-
-
 int socketfd , newfd , fd ;   //listen on socketfd, new connection on newfd and fd (file descriptor) for opening new files)
-const char *path = "/var/tmp/aesdsocketdata";
+const char *path = "/var/tmp/aesdsocketdata";	//path to file aesdsocketdata
 
 int status , sockstat , listenstat ,  thread_ret ,bindstat;
 
-    
-static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_t timestampthread;
-pthread_t threadc;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; //initialize mutex	
+pthread_t timestampthread;	//holds threadid for the timestampthread
+pthread_t threadc;		//holds threadid for the cleanup thread
 
 int main(int argc, char *argv[])
 {
-    printf("hello\n");
     int yes = 1;
-    
-  
     
     //pid_t pid;
     
@@ -116,8 +88,6 @@ int main(int argc, char *argv[])
     {
         syslog(LOG_ERR,"Cannot handle SIGINT");
         closelog();
-        //return -1;
-        //exit(//exit_FAILURE);
     }
     
     //register signal_handler as our signal handler for SIGTERM
@@ -125,8 +95,6 @@ int main(int argc, char *argv[])
     {
         syslog(LOG_ERR,"Cannot handle SIGTERM");
         closelog();
-        //return -1;
-        //exit(//exit_FAILURE);
     }
     
   //register signal_handler as our signal handler for SIGTERM
@@ -134,7 +102,6 @@ int main(int argc, char *argv[])
   {
       syslog(LOG_ERR,"Cannot handle SIGKILL");
       closelog();
-      //exit(//exit_FAILURE);
   }
     
 
@@ -264,8 +231,6 @@ int main(int argc, char *argv[])
     if(timestampret != 0){
         perror("pthread_create timestamp");
         syslog(LOG_ERR, "Error: Timestamp thread creation failed: %s", strerror(errno));
-        //closelog();
-        ////close(socketfd);
         return -1;
     }
 
@@ -280,8 +245,6 @@ int main(int argc, char *argv[])
             perror("server: accept");
             syslog(LOG_ERR,"server: accept");
             raise(SIGTERM);
-            ////close(socketfd);
-            //closelog();
             return -1;
         }
         
@@ -296,8 +259,6 @@ int main(int argc, char *argv[])
         node_t *current = NULL;
         current = _fill_queue(&head, 0, newfd);
         
-        //pthread_t thread_id;
-        
         //create new thread for the accepted connection
         thread_ret = pthread_create(&(current->ids), NULL, thread_func, (void *)current);
         if(thread_ret)
@@ -305,10 +266,7 @@ int main(int argc, char *argv[])
                 perror("pthread_create");
                 exit(EXIT_FAILURE);
         }
-        //current.ids = thread_id;
-        //current.client_fd = newfd;
         
-        //current = _fill_queue(&head, thread_id, newfd);
         printf("Newfd from main is %d\n",newfd);
         printf("threadID from main is %ld\n",current->ids);
         
@@ -338,18 +296,12 @@ void *thread_func(void* thread_param)
     if(fd < 0)
     {
         printf("File not created\n");
-        //close(socketfd);
-        //close(thread_func_args->client_fd);
         closelog();
-        //exit(//exit_FAILURE);
     }
     else
     {
         printf("File created successfully in append mode\n");
     }   
-    
-    //printf("Newfd from the thread is %d\n",thread_func_args->client_fd);
-    //printf("threadID  is %ld\n",thread_func_args->ids);
     
     
     while(1)
@@ -361,9 +313,6 @@ void *thread_func(void* thread_param)
             pthread_mutex_unlock(&mutex);
             perror("server: recv");
             syslog(LOG_ERR,"server: recv");
-            ////close(socketfd);
-            //close(thread_func_args->client_fd);
-            //closelog();
             pthread_exit(NULL);
         }
         
@@ -375,18 +324,12 @@ void *thread_func(void* thread_param)
             pthread_mutex_unlock(&mutex);
             perror("write failed");
             syslog(LOG_ERR,"write failed");
-            ////close(socketfd);
-            //close(thread_func_args->client_fd);
-            //close(fd);
-            //closelog();
-            ////exit(//exit_FAILURE);
         }
         
         if(buf[bytesread-1] == '\n')
             break;
             
     }
-    
     
     //move file position to start
     lseek(fd, 0, SEEK_SET);
@@ -397,13 +340,8 @@ void *thread_func(void* thread_param)
         {
             perror("read failed");
             syslog(LOG_ERR,"read failed");
-        //  close(thread_func_args->client_fd);
-            //close(newfd);
-            //close(fd);
-            //closelog();
             pthread_exit(NULL);
         }
-        
         
         //send packets as they are read from the file
         int bytes_sent = send(thread_func_args->client_fd, send_buf, ret, 0);
@@ -411,11 +349,6 @@ void *thread_func(void* thread_param)
         {
             perror("server: send");
             syslog(LOG_ERR,"server: send");
-            ////close(socketfd);
-            //close(thread_func_args->client_fd);
-            //close(fd);
-            //closelog();
-            //return -1;
             pthread_exit(NULL);
         }
         
@@ -426,15 +359,11 @@ void *thread_func(void* thread_param)
         }
     }
     printf("send buffer\n");
-    
     thread_func_args->complete = 1;
     close(fd);
     shutdown(thread_func_args->client_fd, SHUT_RDWR);
     pthread_mutex_unlock(&mutex);
     printf("file closed\n");
-    
-    
-    
     return NULL;
 }
 
@@ -452,14 +381,11 @@ void *cleanup(void* clean_args)
             {
                 syslog(LOG_DEBUG,"Cleaning thread %ld with complete value %d", tmp->ids, tmp->complete);
                 
-                //shutdown(tmp->ids, SHUT_RDWR);
                 if((pthread_join(tmp->ids, NULL))!=0)
                 {
                     syslog(LOG_ERR,"pthread_join failed from cleanup");
                     printf("pthread_join error\n");
-                    ////exit(//exit_FAILURE);
                 }
-                //tmp->complete = 0;
                 TAILQ_REMOVE(&head, tmp, nodes);
                 free(tmp);
                 tmp = NULL;
@@ -486,7 +412,6 @@ void *timestamp_func(void *timestamp)
            tmp = localtime(&t);
            if (tmp == NULL) {
                perror("localtime");
-               //exit(//exit_FAILURE);
            }
 
            if (strftime(outstr, sizeof(outstr),"timestamp: %a %d %b %Y %T", tmp) == 0) 
@@ -507,10 +432,6 @@ void *timestamp_func(void *timestamp)
         if(fd < 0)
         {
             printf("File not created for timestamp\n");
-            ////close(socketfd);
-            //close(newfd);
-            //closelog();
-            ////exit(//exit_FAILURE);
         }
         else
         {
@@ -523,11 +444,6 @@ void *timestamp_func(void *timestamp)
         {
             perror("write failed");
             syslog(LOG_ERR,"write failed");
-            ////close(socketfd);
-            //close(newfd);
-            //close(fd);
-            //closelog();
-            ////exit(//exit_FAILURE);
         }
         close(fd);
         pthread_mutex_unlock(&mutex);   
@@ -541,8 +457,6 @@ void *timestamp_func(void *timestamp)
 //handler for SIGINT and SIGTERM
 static void signal_handler(int signo)
 {
-/*  if((signo == SIGINT) || (signo == SIGTERM))*/
-/*  {*/
         syslog(LOG_DEBUG,"Caught SIGNAL, //exiting");
         
         printf("Caught SIGNAL, //exiting\n");
@@ -558,7 +472,6 @@ static void signal_handler(int signo)
             if((pthread_kill(handle->ids, SIGKILL))!=0)
             {
                 syslog(LOG_ERR,"Unable to kill thread");
-                ////exit(//exit_FAILURE);
             }
             
         }
@@ -573,9 +486,8 @@ static void signal_handler(int signo)
             perror("Signal Handler : Shutdown");
             syslog(LOG_ERR,"Shutdown failure");
             closelog();
-            //exit(//exit_FAILURE);
         }
-        if((pthread_kill(threadc,SIGKILL))!=0)
+        if((pthread_kill(threadc,SIGKILL)!=0))
         {
             syslog(LOG_ERR,"threadc FAILURE");
         }
@@ -609,7 +521,38 @@ static void signal_handler(int signo)
         
         unlink(path);
         closelog();
-        
-/*  }*/
-    ////exit(//exit_SUCCESS);
+}
+
+// manages the linked list of given threads
+node_t* _fill_queue(head_t * head, const pthread_t threadid, const int threadclientid)
+{
+    struct threads *e = malloc(sizeof(struct threads));
+    if(e == NULL)
+    {
+        printf("Malloc Unsuccessfull\n");
+        exit(EXIT_FAILURE);
+    }
+    e->ids = threadid;
+    e->client_fd = threadclientid;
+    e->complete = 0;
+    TAILQ_INSERT_TAIL(head,e,nodes);
+    e = NULL;
+
+    count_nodes++;
+    printf("node created for threads are %d\n",count_nodes);
+    return TAILQ_LAST(head, head_s);
+}
+
+// Removes all of the elements from the queue before free()ing them
+void _free_queue(head_t * head)
+{
+    struct threads *e = NULL;
+    while(!TAILQ_EMPTY(head))
+    {
+        e = TAILQ_FIRST(head);
+        TAILQ_REMOVE(head,e,nodes);
+        free(e);
+        e = NULL;
+    }
+    
 }
