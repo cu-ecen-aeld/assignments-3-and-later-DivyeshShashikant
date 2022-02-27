@@ -1,12 +1,20 @@
-CC=${CROSS_COMPILE}gcc
-CFLAGS=-g -Wall -Werror 
+ifeq ($(CC),)
+	CC = ${CROSS_COMPILE}gcc
+endif
+ifeq ($(CFLAGS),)
+	CFLAGS = -g -Wall -Werror 
+endif
+ifeq ($(LDFLAGS),)
+	LDFLAGS = -pthread -lrt
+endif
 
 default: aesdsocket
 
 all : aesdsocket
 
 aesdsocket: aesdsocket.o
-	${CC} ${CFLAGS} aesdsocket.c -o aesdsocket -lpthread
+	$(CC) $(CFLAGS) $^ -o $@ $(INCLUDES) $(LDFLAGS)
 
-clean:
+clean: 
 	-rm -f *.o aesdsocket
+	
