@@ -32,6 +32,39 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct
     /**
     * TODO: implement per description
     */
+    
+    //return NULL if buffer or entry_offset_byte_rtn is NULL
+    if(buffer == NULL || entry_offset_byte_rtn == NULL)
+    	return NULL;
+    	
+    //keep track of the out_offs that is the read pointer in current_pos	
+    uint8_t current_pos = buffer->out_offs;
+    
+    //maintain the elements count in queue
+    uint8_t count = 0;
+    
+    while(count < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
+    {
+   	count++;
+   	
+   	//check if char_offset is less than the current buffer size
+   	if(char_offset < buffer->entry[current_pos].size)
+   	{
+   		*entry_offset_byte_rtn = char_offset;		
+   		return &(buffer->entry[current_pos]);
+   	}
+   	
+   	//get the char_offset value when offset is greater than the current buffer size
+   	char_offset = char_offset - buffer->entry[current_pos].size;
+   	current_pos++;
+   	
+   	//rollover condition
+   	if(current_pos == AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
+   	{
+   		current_pos = 0;
+   	}
+    }    
+    
     return NULL;
 }
 
@@ -47,6 +80,42 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
     /**
     * TODO: implement per description 
     */
+    
+    //return if buffer or add_entry is NULL or size of the element is 0
+    if(buffer == NULL || add_entry == NULL || add_entry->size == 0)
+    	return ;
+    
+    	
+    buffer->entry[buffer->in_offs] = *add_entry;
+    (buffer->in_offs)++;
+    
+    //rollover condition
+    if((buffer->in_offs) == AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
+    {
+    	buffer->in_offs = 0;
+    }
+    	
+    if(buffer->full == 1)
+    {
+    	(buffer->out_offs)++;
+    	if((buffer->out_offs) == AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
+    	{
+    		buffer->out_offs = 0;
+    	}
+    	
+    }
+    
+    //check queue full condition
+    if(buffer->in_offs == buffer->out_offs)
+    {
+    	buffer->full = 1;
+    }
+    else
+    {
+    	buffer->full = 0;
+    }	
+    
+    
 }
 
 /**
