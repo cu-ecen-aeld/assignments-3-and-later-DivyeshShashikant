@@ -38,7 +38,7 @@ int aesd_open(struct inode *inode, struct file *filp)
 	 * TODO: handle open
 	 */
 	 
-	struct aesd_dev *dev = NULL;
+	struct aesd_dev *dev;
 	dev = container_of(inode->i_cdev, struct aesd_dev, cdev);
 	filp->private_data = dev;
 	
@@ -64,9 +64,9 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	/**
 	 * TODO: handle read
 	 */
-	
+	 
 	 struct aesd_dev *dev;
-	 dev = filp->private_data;
+	 dev = (struct aesd_dev*)filp->private_data;
 	 struct aesd_buffer_entry *element = NULL;
 	 size_t bytesread = 0;
 	 size_t read_offset = 0;
@@ -86,21 +86,36 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	 	goto out; //undo changes
 	 }
 	 
-	 bytesread = element->size - read_offset;
-	 
-	 if(bytesread > count)
+	 else
 	 {
-	 	bytesread = count;
+	 	if(count> (element->size - read_offset))
+	 	{
+	 		count = element->size - read_offset;
+	 	}
+	 	
 	 }
 	 
-	 if(copy_to_user(buf, element->buffptr + read_offset, bytesread))
-	 {
-	 	retval = -EFAULT;
-	 	goto out;
-	 }
+	 bytesread = copy_to_user(buf, (element->buffptr + read_offset), count);
 	 
-	 *f_pos += bytesread;
-	 retval = bytesread;
+	 retval = count - read_data;
+	 *f_pos += retval;
+	 
+/*	 */
+/*	 bytesread = element->size - read_offset;*/
+/*	 */
+/*	 if(bytesread > count)*/
+/*	 {*/
+/*	 	bytesread = count;*/
+/*	 }*/
+/*	 */
+/*	 if(copy_to_user(buf, element->buffptr + read_offset, bytesread))*/
+/*	 {*/
+/*	 	retval = -EFAULT;*/
+/*	 	goto out;*/
+/*	 }*/
+/*	 */
+/*	 *f_pos += bytesread;*/
+/*	 retval = bytesread;*/
 	 
 out:
 	 mutex_unlock(&dev->aesd_dev_lock);
@@ -117,7 +132,11 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	 */
 	 
 	struct aesd_dev *dev;
-	dev = filp->private_data;
+	dev = (struct aesd_dev*)filp->private_data;
+	const char* buffer_created = NULL;
+	
+	size_t not_written = 0;
+	
 	
 	if (mutex_lock_interruptible(&dev->aesd_dev_lock))
 	 {
@@ -142,28 +161,46 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 		}
 	}
 	
-	if(copy_from_user(&dev->elements.buffptr[dev->elements.size], buf, count))
-	{
-		retval = -EFAULT;
-		goto out;
-	}
 	
-	dev->elements.size += count;
-	
-	if(strchr(dev->elements.buffptr, '\n')!=0)	
+	not_written = copy_from_user((void *)(dev->elements.buffptr + dev->elements.size), buf, count);
+	retval = count - not_written; 
+	dev->elements.size += retval;
+
+	if(memchr(dev->elements.buffptr, '\n', dev->elements.size))
 	{
-		const char* buffer_created = NULL;
-		buffer_created = aesd_circular_buffer_add_entry(&dev->cbuf, &dev->elements);
-		if(buffer_created!=NULL)
+		buffer_created = aesd_circular_buffer_add_entry(&dev->cbuf, &dev->elements); 
+		if(buffer_created)
 		{
 			kfree(buffer_created);
 		}
-		
-		dev->elements.buffptr = 0;
+
+		dev->elements.buffptr = NULL;
 		dev->elements.size = 0;
-	
+
 	}
-	retval = count;
+	
+/*	if(copy_from_user(&dev->elements.buffptr[dev->elements.size], buf, count))*/
+/*	{*/
+/*		retval = -EFAULT;*/
+/*		goto out;*/
+/*	}*/
+/*	*/
+/*	dev->elements.size += count;*/
+/*	*/
+/*	if(strchr(dev->elements.buffptr, '\n')!=0)	*/
+/*	{*/
+/*		*/
+/*		buffer_created = aesd_circular_buffer_add_entry(&dev->cbuf, &dev->elements);*/
+/*		if(buffer_created!=NULL)*/
+/*		{*/
+/*			kfree(buffer_created);*/
+/*		}*/
+/*		*/
+/*		dev->elements.buffptr = 0;*/
+/*		dev->elements.size = 0;*/
+/*	*/
+/*	}*/
+/*	retval = count;*/
 	
 out:	
 	mutex_unlock(&dev->aesd_dev_lock);
@@ -241,7 +278,7 @@ void aesd_cleanup_module(void)
 			kfree(element->buffptr);
 		}
 	}
-	mutex_destroy(&aesd_device.aesd_dev_lock);
+	//mutex_destroy(&aesd_device.aesd_dev_lock);
 	unregister_chrdev_region(devno, 1);
 }
 
