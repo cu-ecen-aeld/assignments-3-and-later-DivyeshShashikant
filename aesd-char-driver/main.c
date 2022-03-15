@@ -16,8 +16,13 @@
 #include <linux/printk.h>
 #include <linux/types.h>
 #include <linux/cdev.h>
+#include <linux/mutex.h>
+#include <linux/slab.h>
 #include <linux/fs.h> // file_operations
 #include "aesdchar.h"
+#include <linux/uaccess.h> 
+//#include <asm/uaccess.h> 
+
 int aesd_major =   0; // use dynamic major
 int aesd_minor =   0;
 
@@ -64,16 +69,16 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	 dev = filp->private_data;
 	 struct aesd_buffer_entry *element;
 	 size_t bytesread;
-	 size_t read_offset;
+	 size_t read_offset =0;
 	 
-	 if (mutex_lock_interruptible(&dev->aesd_dev_lock))
+	 if (mutex_lock_interruptible(&aesd_device.aesd_dev_lock))
 	 {
 	 	PDEBUG("lock not acquired: read op");
 		return -ERESTARTSYS;
 	 }
 	 // @return the struct aesd_buffer_entry structure representing the position described by char_offset, or
   	 // NULL if this position is not available in the buffer (not enough data is written).
-	 element = aesd_circular_buffer_find_entry_offset_for_fpos(dev->cbuf, f_pos, read_offset);
+	 element = aesd_circular_buffer_find_entry_offset_for_fpos(&dev->cbuf, *f_pos, &read_offset);
 	 
 	 if(element == NULL)
 	 {
@@ -94,7 +99,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	 retval = count;
 	 
 out:
-	 mutex_unlock(dev->aesd_dev_lock);
+	 mutex_unlock(&aesd_device.aesd_dev_lock);
  	 return retval;
 }
 
@@ -107,10 +112,10 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	 * TODO: handle write
 	 */
 	 
-	struct aesd_dev dev*;
+	struct aesd_dev *dev;
 	dev = filp->private_data;
 	
-	if (mutex_lock_interruptible(&dev->aesd_dev_lock))
+	if (mutex_lock_interruptible(&aesd_device.aesd_dev_lock))
 	 {
 	 	PDEBUG("lock not acquired: write op");
 		return -ERESTARTSYS;
@@ -126,7 +131,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	}
 	else
 	{
-		dev->element.buffptr = kmalloc(dev->element.buffptr, (dev->element.size + count), GFP_KERNEL);
+		dev->element.buffptr = krealloc(dev->element.buffptr, dev->element.size + count, GFP_KERNEL);
 		if(!dev->element.size)
 		{
 			goto out;
@@ -152,7 +157,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	}
 	
 out:	
-	mutex_unlock(dev->aesd_dev_lock);
+	mutex_unlock(&aesd_device.aesd_dev_lock);
 	return retval;
 }
 struct file_operations aesd_fops = {
