@@ -38,7 +38,7 @@ int aesd_open(struct inode *inode, struct file *filp)
 	 * TODO: handle open
 	 */
 	 
-	struct aesd_dev *dev;
+	struct aesd_dev *dev = NULL;
 	dev = container_of(inode->i_cdev, struct aesd_dev, cdev);
 	filp->private_data = dev;
 	
@@ -80,7 +80,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
   	 // NULL if this position is not available in the buffer (not enough data is written).
 	 element = aesd_circular_buffer_find_entry_offset_for_fpos(&dev->cbuf, *f_pos, &read_offset);
 	 
-	 if(element == NULL)
+	 if(element == NULL)		
 	 {
 	 	retval = 0;
 	 	goto out; //undo changes
