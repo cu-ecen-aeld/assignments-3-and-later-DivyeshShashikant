@@ -23,6 +23,13 @@
 #define BACKLOG 10      //pending connections
 #define MAXSIZE 1024    
 
+#define USE_AESD_CHAR_DEVICE 1
+
+#if(USE_AESD_CHAR_DEVICE ==1)
+const char *path = "/dev/aesdchar";	//path to file aesdchar
+#else
+const char *path = "/var/tmp/aesdsocketdata";	//path to file aesdsocketdata
+#endif
 
 //structure that holds relevant data for the threads in linked list
 typedef struct threads{
@@ -51,7 +58,7 @@ node_t* _fill_queue(head_t * head, const pthread_t threadid, const int threadcli
 int count_nodes, count_nodes1;
 
 int socketfd , newfd , fd ;   //listen on socketfd, new connection on newfd and fd (file descriptor) for opening new files)
-const char *path = "/var/tmp/aesdsocketdata";	//path to file aesdsocketdata
+//const char *path = "/var/tmp/aesdsocketdata";	//path to file aesdsocketdata
 
 int status , sockstat , listenstat ,  thread_ret ,bindstat;
 
@@ -226,7 +233,8 @@ int main(int argc, char *argv[])
             return -1;
     }
     
-    
+#if(USE_AESD_CHAR_DEVICE !=1)
+
     int timestampret = pthread_create(&timestampthread, NULL, timestamp_func, NULL);
     if(timestampret != 0){
         perror("pthread_create timestamp");
@@ -234,7 +242,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    
+#endif    
     
     while(1)
     {
@@ -399,7 +407,7 @@ void *cleanup(void* clean_args)
     return NULL;        
 }
 
-
+#if(USE_AESD_CHAR_DEVICE !=1)
 void *timestamp_func(void *timestamp)
 {
     while(1)
@@ -452,6 +460,8 @@ void *timestamp_func(void *timestamp)
     }
 
 }
+
+#endif
 
     
 //handler for SIGINT and SIGTERM
