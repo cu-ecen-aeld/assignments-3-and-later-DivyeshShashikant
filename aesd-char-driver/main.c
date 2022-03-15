@@ -232,7 +232,10 @@ void aesd_cleanup_module(void)
 	uint8_t index = 0;
 	AESD_CIRCULAR_BUFFER_FOREACH(element, &aesd_device.cbuf, index)
 	{
-		kfree(element->buffptr);
+		if(element->buffptr!=NULL)
+		{
+			kfree(element->buffptr);
+		}
 	}
 	mutex_destroy(&aesd_device.aesd_dev_lock);
 	unregister_chrdev_region(devno, 1);
