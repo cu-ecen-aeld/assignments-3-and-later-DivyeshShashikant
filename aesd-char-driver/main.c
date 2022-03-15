@@ -150,7 +150,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	
 	dev->elements.size += count;
 	
-	if(strchr(dev->elements.buffptr, '\n')!=0)
+	if(strchr(dev->elements.buffptr, '\n')!=0)	
 	{
 		const char* buffer_created = NULL;
 		buffer_created = aesd_circular_buffer_add_entry(&dev->cbuf, &dev->elements);
