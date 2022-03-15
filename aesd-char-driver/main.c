@@ -67,9 +67,9 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	
 	 struct aesd_dev *dev;
 	 dev = filp->private_data;
-	 struct aesd_buffer_entry *element;
-	 size_t bytesread;
-	 size_t read_offset =0;
+	 struct aesd_buffer_entry *element = NULL;
+	 size_t bytesread = 0;
+	 size_t read_offset = 0;
 	 
 	 if (mutex_lock_interruptible(&aesd_device.aesd_dev_lock))
 	 {
@@ -87,9 +87,13 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	 }
 	 
 	 bytesread = element->size - read_offset;
-	 count = bytesread;
 	 
-	 if(copy_to_user(buf, element->buffptr + read_offset, count))
+	 if(bytesread > count)
+	 {
+	 	bytesread = count;
+	 }
+	 
+	 if(copy_to_user(buf, element->buffptr + read_offset, bytesread))
 	 {
 	 	retval = -EFAULT;
 	 	goto out;
@@ -124,7 +128,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	if(!dev->element.size)
 	{
 		dev->element.buffptr = kmalloc(count, GFP_KERNEL);
-		if(!dev->element.size)
+		if(!dev->element.buffptr)
 		{
 			goto out;
 		}
@@ -132,13 +136,13 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	else
 	{
 		dev->element.buffptr = krealloc(dev->element.buffptr, dev->element.size + count, GFP_KERNEL);
-		if(!dev->element.size)
+		if(!dev->element.buffptr)
 		{
 			goto out;
 		}
 	}
 	
-	if(copy_from_user(&dev->element.buffptr[dev->element.size], buf, count))
+	if(copy_from_user((void *)&dev->element.buffptr[dev->element.size], buf, count))
 	{
 		retval = -EFAULT;
 		goto out;
@@ -150,6 +154,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	{
 		const char* buffer_created = NULL;
 		buffer_created = aesd_circular_buffer_add_entry(&dev->cbuf, &dev->element);
+		
 		
 		dev->element.buffptr = 0;
 		dev->element.size = 0;
