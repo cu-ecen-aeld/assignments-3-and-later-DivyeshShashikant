@@ -154,12 +154,16 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	{
 		const char* buffer_created = NULL;
 		buffer_created = aesd_circular_buffer_add_entry(&dev->cbuf, &dev->element);
-		
+		if(buffer_created!=NULL)
+		{
+			kfree(buffer_created);
+		}
 		
 		dev->element.buffptr = 0;
 		dev->element.size = 0;
 	
 	}
+	retval = count;
 	
 out:	
 	mutex_unlock(&aesd_device.aesd_dev_lock);
