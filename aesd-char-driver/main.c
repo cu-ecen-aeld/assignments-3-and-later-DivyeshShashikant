@@ -100,7 +100,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	 }
 	 
 	 *f_pos += bytesread;
-	 retval = bytesread	;
+	 retval = bytesread;
 	 
 out:
 	 mutex_unlock(&aesd_device.aesd_dev_lock);
@@ -125,42 +125,42 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 		return -ERESTARTSYS;
 	 }
 	 
-	if(!dev->element.size)
+	if(!dev->elements.size)
 	{
-		dev->element.buffptr = kmalloc(count, GFP_KERNEL);
-		if(!dev->element.buffptr)
+		dev->elements.buffptr = kmalloc(count, GFP_KERNEL);
+		if(!dev->elements.buffptr)
 		{
 			goto out;
 		}
 	}
 	else
 	{
-		dev->element.buffptr = krealloc(dev->element.buffptr, dev->element.size + count, GFP_KERNEL);
-		if(!dev->element.buffptr)
+		dev->elements.buffptr = krealloc(dev->elements.buffptr, dev->elements.size + count, GFP_KERNEL);
+		if(!dev->elements.buffptr)
 		{
 			goto out;
 		}
 	}
 	
-	if(copy_from_user(&dev->element.buffptr[dev->element.size], buf, count))
+	if(copy_from_user(&dev->elements.buffptr[dev->elements.size], buf, count))
 	{
 		retval = -EFAULT;
 		goto out;
 	}
 	
-	dev->element.size += count;
+	dev->elements.size += count;
 	
-	if(strchr(dev->element.buffptr, '\n')!=0)
+	if(strchr(dev->elements.buffptr, '\n')!=0)
 	{
 		const char* buffer_created = NULL;
-		buffer_created = aesd_circular_buffer_add_entry(&dev->cbuf, &dev->element);
+		buffer_created = aesd_circular_buffer_add_entry(&dev->cbuf, &dev->elements);
 		if(buffer_created!=NULL)
 		{
 			kfree(buffer_created);
 		}
 		
-		dev->element.buffptr = 0;
-		dev->element.size = 0;
+		dev->elements.buffptr = 0;
+		dev->elements.size = 0;
 	
 	}
 	retval = count;
