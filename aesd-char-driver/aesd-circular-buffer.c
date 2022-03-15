@@ -80,8 +80,7 @@ const char* aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, 
     /**
     * TODO: implement per description 
     */
-    const char* nodeadd;
-    nodeadd = NULL;
+    const char* nodeadd = NULL;
     
     //return if buffer or add_entry is NULL or size of the element is 0
     if(buffer == NULL || add_entry == NULL || add_entry->size == 0)
@@ -116,10 +115,7 @@ const char* aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, 
     {
     	buffer->full = 1;
     }
-    else
-    {
-    	buffer->full = 0;
-    }	
+ 
     return nodeadd ;
     
 }

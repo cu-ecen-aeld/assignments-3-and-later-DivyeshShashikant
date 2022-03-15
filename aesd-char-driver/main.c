@@ -71,7 +71,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	 size_t bytesread = 0;
 	 size_t read_offset = 0;
 	 
-	 if (mutex_lock_interruptible(&aesd_device.aesd_dev_lock))
+	 if (mutex_lock_interruptible(&dev->aesd_dev_lock))
 	 {
 	 	PDEBUG("lock not acquired: read op");
 		return -ERESTARTSYS;
@@ -103,7 +103,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	 retval = bytesread;
 	 
 out:
-	 mutex_unlock(&aesd_device.aesd_dev_lock);
+	 mutex_unlock(&dev->aesd_dev_lock);
  	 return retval;
 }
 
@@ -119,7 +119,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	struct aesd_dev *dev;
 	dev = filp->private_data;
 	
-	if (mutex_lock_interruptible(&aesd_device.aesd_dev_lock))
+	if (mutex_lock_interruptible(&dev->aesd_dev_lock))
 	 {
 	 	PDEBUG("lock not acquired: write op");
 		return -ERESTARTSYS;
@@ -166,7 +166,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	retval = count;
 	
 out:	
-	mutex_unlock(&aesd_device.aesd_dev_lock);
+	mutex_unlock(&dev->aesd_dev_lock);
 	return retval;
 }
 struct file_operations aesd_fops = {
