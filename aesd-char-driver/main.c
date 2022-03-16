@@ -146,7 +146,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 		}
 	}
 	
-	if(copy_from_user(dev->elements.buffptr[dev->elements.size], buf, count))
+	if(copy_from_user(&dev->elements.buffptr[dev->elements.size], buf, count))
 	{
 		retval = -EFAULT;
 		goto out;
