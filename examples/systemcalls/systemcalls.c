@@ -1,6 +1,16 @@
+/*@author: Divyesh  Patel
+ *@filename: systemcalls.c
+ *@brief: Assignment 3 Part 1: System Calls
+*/
 #include "systemcalls.h"
-
-/**
+#include "sys/types.h"
+#include "sys/wait.h"
+#include "unistd.h"
+#include "stdlib.h"
+#include "fcntl.h"
+#include "stdio.h"
+/*
+ *
  * @param cmd the command to execute with system()
  * @return true if the commands in ... with arguments @param arguments were executed 
  *   successfully using the system() call, false if an error occurred, 
@@ -16,6 +26,10 @@ bool do_system(const char *cmd)
  *   and return a boolean true if the system() call completed with success 
  *   or false() if it returned a failure
 */
+    int status;
+    status = system(cmd);
+    if(status == -1)
+    	perror("system error");
 
     return true;
 }
@@ -58,7 +72,65 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *   
 */
+    pid_t pid;
 
+    pid = fork();
+
+    //check for fork() errors
+    if(pid == -1)
+    {
+	    perror("fork");
+    }	    
+    //create child
+    else if(!pid)
+    {
+    	    printf("Child process created\n");
+	    int status;
+	    status = execv(command[0],command);
+	    if(status==-1)
+	    {
+		    perror("execv");
+		    exit(EXIT_FAILURE);
+	    }      	    
+	    
+    }
+    //waiting for terminated child
+    else
+    {
+    int wstatus;
+    pid_t wait_status;
+
+    wait_status = waitpid(0,&wstatus,0);
+    if(wait_status==-1)
+    {
+	    perror("waitpid");
+	    return false;
+    }	    
+    else
+    {
+	    printf("pid=%d\n",wait_status);
+
+	    if(WIFEXITED (wstatus))
+	    {
+		    printf("Normal termination with exit status=%d\n",WEXITSTATUS (wstatus));
+		    if(WEXITSTATUS(wstatus) == EXIT_SUCCESS)
+		    {
+			    return true;
+		    }
+		    else
+		    {
+			    return false;
+		    }
+	    }      		
+	    if(WIFSIGNALED (wstatus))
+	    {
+		    printf("Killed by signal=%d%s\n",WTERMSIG (wstatus),WCOREDUMP (wstatus) ? " (dumped core)" : "");
+		    return false;
+	    }	   
+	    
+    }
+    	
+    }
     va_end(args);
 
     return true;
@@ -82,7 +154,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
-    command[count] = command[count];
+   // command[count] = command[count];
 
 
 /*
@@ -93,7 +165,71 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   
 */
 
+
+    int kidpid, status;
+    int fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+    if (fd < 0) 
+    {
+	    perror("open"); 
+	    abort();
+    }
+    switch (kidpid = fork()) {
+    	case -1: perror("fork"); 
+		 abort();
+    	case 0:
+    		if (dup2(fd, 1) < 0) 
+		{ 
+			perror("dup2"); 
+			abort();
+	       	}
+    		close(fd);
+    		status = execv(command[0], command);
+	       	if(status==-1)
+		{
+			perror("execvp");
+	       		abort();
+		}
+  	default:
+    		close(fd);
+    /* do whatever the parent wants to do. */
+    int wstatus;
+    pid_t wait_status;
+
+    wait_status = waitpid(0,&wstatus,0);
+    if(wait_status==-1)
+    {
+	    perror("waitpid");
+	    return false;
+    }	    
+    else
+    {
+	    printf("pid=%d\n",wait_status);
+
+	    if(WIFEXITED (wstatus))
+	    {
+		    printf("Normal termination with exit status=%d\n",WEXITSTATUS (wstatus));
+		    if(WEXITSTATUS(wstatus) == EXIT_SUCCESS)
+		    {
+			    return true;
+		    }
+		    else
+		    {
+			    return false;
+		    }
+	    }      		
+	    if(WIFSIGNALED (wstatus))
+	    {
+		    printf("Killed by signal=%d%s\n",WTERMSIG (wstatus),WCOREDUMP (wstatus) ? " (dumped core)" : "");
+		    return false;
+	    }	   
+	    
+    }
+ 
+    }
+
+    close(fd);
     va_end(args);
     
     return true;
 }
+
