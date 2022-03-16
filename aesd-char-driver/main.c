@@ -88,10 +88,10 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	 
 	 bytesread = element->size - read_offset;
 	 
-/*	 if(bytesread > count)*/
-/*	 {*/
-/*	 	bytesread = count;*/
-/*	 }*/
+	 if(bytesread > count)
+	 {
+	 	bytesread = count;
+	 }
 	 
 	 if(copy_to_user(buf, element->buffptr + read_offset, bytesread))
 	 {
@@ -122,6 +122,8 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	 
 	struct aesd_dev *dev;
 	dev = filp->private_data;
+	int i;
+	
 	
 	if (mutex_lock_interruptible(&dev->aesd_dev_lock))
 	 {
@@ -154,22 +156,27 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	
 	dev->elements.size += count;
 	
-	if(strchr(dev->elements.buffptr, '\n')!=0)	
-	{
-		const char* buffer_created = NULL;
-		buffer_created = aesd_circular_buffer_add_entry(&dev->cbuf, &dev->elements);
-		if(buffer_created!=NULL)
-		{
-			kfree(buffer_created);
-		}
-		
-		dev->elements.buffptr = 0;
-		dev->elements.size = 0;
+	//if(strchr(dev->elements.buffptr, '\n')!=0)
 	
+	for(i = 0; i<dev->elements.size; i++)	
+	{
+		if(dev->elements.buffptr[i] == '\n')
+		{
+			const char* buffer_created = NULL;
+			buffer_created = aesd_circular_buffer_add_entry(&dev->cbuf, &dev->elements);
+			if(buffer_created!=NULL)
+			{
+				kfree(buffer_created);
+			}
+			
+			dev->elements.buffptr = 0;
+			dev->elements.size = 0;
+		}
 	}
 	retval = count;
 	
 out:	
+	*f_pos = 0;
 	mutex_unlock(&dev->aesd_dev_lock);
 	return retval;
 }
