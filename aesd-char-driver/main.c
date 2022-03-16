@@ -88,19 +88,23 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	 
 	 bytesread = element->size - read_offset;
 	 
-	 if(bytesread > count)
-	 {
-	 	bytesread = count;
-	 }
+/*	 if(bytesread > count)*/
+/*	 {*/
+/*	 	bytesread = count;*/
+/*	 }*/
 	 
 	 if(copy_to_user(buf, element->buffptr + read_offset, bytesread))
 	 {
 	 	retval = -EFAULT;
 	 	goto out;
 	 }
+	 else
+	 {
+	 	retval = bytesread;
+	 }
 	 
 	 *f_pos += bytesread;
-	 retval = bytesread;
+	 //retval = bytesread;
 	 
 out:
 	 mutex_unlock(&dev->aesd_dev_lock);
