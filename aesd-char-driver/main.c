@@ -37,9 +37,11 @@ int aesd_open(struct inode *inode, struct file *filp)
 	/**
 	 * TODO: handle open
 	 */
-	 
+	//aesd_dev device information
 	struct aesd_dev *dev = NULL;
+	//fetching pointer to the containing structure
 	dev = container_of(inode->i_cdev, struct aesd_dev, cdev);
+	//store the returned pointer to private data
 	filp->private_data = dev;
 	
 	return 0;
@@ -71,6 +73,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	 size_t bytesread = 0;
 	 size_t read_offset = 0;
 	 
+	 //Acquire mutex lock configured in interruptible mode
 	 if (mutex_lock_interruptible(&dev->aesd_dev_lock))
 	 {
 	 	PDEBUG("lock not acquired: read op");
@@ -82,31 +85,36 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	 
 	 if(element == NULL)		
 	 {
+	 	//error handling if offset not found
 	 	retval = 0;
 	 	goto out; //undo changes
 	 }
 	 
+	 //Calculating the number of bytes read
 	 bytesread = element->size - read_offset;
 	 
 	 if(bytesread > count)
 	 {
+	 	//Condition for partial read
 	 	bytesread = count;
 	 }
 	 
+	 //Copy from kernel space to user space
 	 if(copy_to_user(buf, element->buffptr + read_offset, bytesread))
 	 {
 	 	retval = -EFAULT;
 	 	goto out;
 	 }
 	 else
-	 {
+	 {	
+	 	//return the number of bytes read
 	 	retval = bytesread;
 	 }
 	 
 	 *f_pos += bytesread;
 	 //retval = bytesread;
 	 
-out:
+out:	 //Cleanup exit logic for the function
 	 mutex_unlock(&dev->aesd_dev_lock);
  	 return retval;
 }
@@ -124,7 +132,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	dev = filp->private_data;
 	int i;
 	
-	
+	//Acquiring mutex in interruptable mode
 	if (mutex_lock_interruptible(&dev->aesd_dev_lock))
 	 {
 	 	PDEBUG("lock not acquired: write op");
@@ -132,50 +140,60 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	 }
 	 
 	if(!dev->elements.size)
-	{
+	{	
+		//if memory space not allocated
 		dev->elements.buffptr = kmalloc(count, GFP_KERNEL);
 		if(!dev->elements.buffptr)
-		{
+		{	
+			//malloc fails
 			goto out;
 		}
 	}
 	else
 	{
+		//reallocate if already allocated and space not enough
 		dev->elements.buffptr = krealloc(dev->elements.buffptr, dev->elements.size + count, GFP_KERNEL);
 		if(!dev->elements.buffptr)
-		{
+		{	
+			//reallocation fails
 			goto out;
 		}
 	}
 	
+	//copy from user space to kernel space
 	if(copy_from_user(&dev->elements.buffptr[dev->elements.size], buf, count))
 	{
 		retval = -EFAULT;
 		goto out;
 	}
 	
+	
+	//update the buffer size based on the data read
 	dev->elements.size += count;
 	
-	//if(strchr(dev->elements.buffptr, '\n')!=0)
+
 	
-	for(i = 0; i<dev->elements.size; i++)	
+	for(i = 0; i<dev->elements.size; i++)				//traversing thorugh the entire queue
 	{
 		if(dev->elements.buffptr[i] == '\n')
-		{
+		{	
+			//enqueue only if new line character received
 			const char* buffer_created = NULL;
 			buffer_created = aesd_circular_buffer_add_entry(&dev->cbuf, &dev->elements);
 			if(buffer_created!=NULL)
-			{
+			{	
+				//free the pointer if queue is full
 				kfree(buffer_created);
 			}
 			
+			//reset the buffer pointer and size of the queue
 			dev->elements.buffptr = 0;
 			dev->elements.size = 0;
 		}
 	}
-	retval = count;
+	retval = count;						//return the read count
 	
-out:	
+out:	//function cleanup exit routine
 	*f_pos = 0;
 	mutex_unlock(&dev->aesd_dev_lock);
 	return retval;
@@ -220,7 +238,7 @@ int aesd_init_module(void)
 	/**
 	 * TODO: initialize the AESD specific portion of the device
 	 */
-	 
+	 //initialize mutex for further use
 	 mutex_init(&aesd_device.aesd_dev_lock);
 	 
 
@@ -245,18 +263,18 @@ void aesd_cleanup_module(void)
 	 
 	struct aesd_buffer_entry *element;
 	uint8_t index = 0;
+	//traverse queue for all available elements
 	AESD_CIRCULAR_BUFFER_FOREACH(element, &aesd_device.cbuf, index)
 	{
 		if(element->buffptr!=NULL)
-		{
+		{	
+			//free available queue element
 			kfree(element->buffptr);
 		}
-	
+	//destroy mutex on cleanup
 	mutex_destroy(&aesd_device.aesd_dev_lock);
 	unregister_chrdev_region(devno, 1);
-}
-
-
+	}
 }
 module_init(aesd_init_module);
 module_exit(aesd_cleanup_module);
